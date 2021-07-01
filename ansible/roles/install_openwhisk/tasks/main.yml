@@ -1,0 +1,40 @@
+---
+- name: mark core nodes
+  become: yes
+  become_user: ubuntu
+  shell: kubectl get nodes | grep k8s-m | awk '{print $1;}' | xargs -I {} sh -c 'kubectl label nodes {} openwhisk-role=core'
+- name: mark invoker nodes
+  become: yes
+  become_user: ubuntu
+  shell: kubectl get nodes | grep k8s-w | awk '{print $1;}' | xargs -I {} sh -c 'kubectl label nodes {} openwhisk-role=invoker'
+- name: setting CLUSTER_IP
+  set_fact: 
+    CLUSTER_IP: "{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}"
+- name: install mycluster.yaml
+  template:
+    src: mycluster.yaml
+    dest: /home/ubuntu/mycluster.yaml
+- name: add openwhisk to help repo
+  shell: /snap/bin/helm repo add openwhisk https://openwhisk.apache.org/charts
+  become: yes
+  become_user: ubuntu
+- name: helm repo update
+  shell: /snap/bin/helm repo update
+  become: yes
+  become_user: ubuntu
+- name: helm install openwhisk cluster
+  shell: /snap/bin/helm install owdev openwhisk/openwhisk -n openwhisk --create-namespace -f mycluster.yaml
+  become: yes
+  become_user: ubuntu
+- name: download wsk
+  get_url:
+    url: https://github.com/apache/openwhisk-cli/releases/download/1.1.0/OpenWhisk_CLI-1.1.0-linux-amd64.tgz
+    dest: /home/ubuntu
+- name: extract openwhisk tgz
+  shell: tar xfv OpenWhisk_CLI-1.1.0-linux-amd64.tgz
+- name: rm openwhisk tgz
+  shell: rm OpenWhisk_CLI-1.1.0-linux-amd64.tgz
+- name: wsk set apihost
+  shell: /home/ubuntu/wsk property set --apihost {{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:31011
+- name: wsk set auth
+  shell: /home/ubuntu/wsk property set --auth 23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP

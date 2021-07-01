@@ -1,0 +1,5 @@
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  roles:
+    - install_openwhisk

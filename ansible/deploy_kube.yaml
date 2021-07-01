@@ -1,0 +1,6 @@
+- name: install kube dependencies
+  import_playbook: kube/kube-dependencies.yaml
+- name: configure kube masters
+  import_playbook: kube/master-cluster.yaml
+- name: configure kube workers
+  import_playbook: kube/workers-cluster.yml
